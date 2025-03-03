@@ -1,0 +1,234 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streaming de Series</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            background-color: #111;
+            color: white;
+        }
+
+        .title {
+            text-align: center;
+            margin: 20px;
+            font-size: 36px;
+            color: #FF4C4C;
+        }
+
+        .search-container {
+            text-align: center;
+            margin: 20px;
+        }
+
+        .search-input {
+            width: 300px;
+            padding: 12px;
+            border-radius: 30px;
+            border: 2px solid #FF4C4C;
+            font-size: 16px;
+            outline: none;
+            transition: width 0.4s ease-in-out;
+        }
+
+        .search-input:focus {
+            width: 350px;
+            border-color: #FF1C1C;
+        }
+
+        .series-container {
+            margin: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .series-item {
+            position: relative;
+            width: 150px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .series-item:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(255, 76, 76, 0.6);
+        }
+
+        .series-item a {
+            text-decoration: none;
+            color: white;
+            display: block;
+            height: 100%;
+        }
+
+        .series-item img {
+            width: 100%;
+            height: 220px;
+            border-radius: 10px;
+            object-fit: cover;
+        }
+
+        .calificacion {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(255, 76, 76, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        .series-title {
+            margin-top: 5px;
+            color: white;
+            font-size: 1em;
+            text-align: center;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            max-width: 130px;
+            display: block;
+        }
+
+        .highlight {
+            background-color: #FF4C4C;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .load-more {
+            display: block;
+            margin: 20px auto;
+            padding: 12px;
+            background-color: #FF4C4C;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            text-align: center;
+            width: 120px;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .load-more:hover {
+            background-color: #FF1C1C;
+        }
+
+        .no-results {
+            text-align: center;
+            color: white;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="title">ANIMES</h1>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" class="search-input" placeholder="Buscar series...">
+    </div>
+
+    <div class="series-container" id="seriesContainer">
+        <!-• Series se cargarán aquí -->
+    </div>
+
+    <div class="no-results" id="noResultsMessage" style="display:none;">No se encontraron resultados</div>
+
+    <button class="load-more" id="loadMore">Ver más</button>
+
+    <script>
+        const seriesData = [
+            { title: "One Piece", calificacion: "8.7", img: "https://media.themoviedb.org/t/p/w600_and_h900_bestv2/cMD9Ygz11zjJzAovURpO75Qg7rT.jpg", url: "https://www.example.com/one-piece" },
+            { title: "Naruto: Shippuden", calificacion: "8.5", img: "https://media.themoviedb.org/t/p/w600_and_h900_bestv2/71mASgFgSiPl9QUexVH8BubU0lD.jpg", url: "https://www.example.com/naruto" },
+            { title: "Demon Slayer: Kimetsu no Yaiba • El viaje de Tanjiro", calificacion: "7.8", img: "https://media.themoviedb.org/t/p/w600_and_h900_bestv2/wq1UG5lPCKpOJgmgpKJszKvoMUe.jpg", url: "https://www.example.com/demon-slayer" },
+            { title: "Chainsaw Man", calificacion: "8.6", img: "https://media.themoviedb.org/t/p/w600_and_h900_bestv2/npdB6eFzizki0WaZ1OvKcJrWe97.jpg", url: "https://www.example.com/chainsaw-man" },
+            { title: "Spy x Family", calificacion: "8.6", img: "https://media.themoviedb.org/t/p/w600_and_h900_bestv2/gHZqglFWJTFwx6rnTq4vkPRnuxu.jpg", url: "https://www.example.com/spy-x-family" },
+            { title: "Blue Lock", calificacion: "8.2", img: "https://media.themoviedb.org/t/p/w600_and_h900_bestv2/fT9W86KFA9Khy2hIbkfClI8IYDH.jpg", url: "https://www.example.com/blue-lock" },
+            { title: "One Punch Man", calificacion: "8.4", img: "https://media.themoviedb.org/t/p/w600_and_h900_bestv2/jbYJuxfZMpYDalkiOnBcCv9TaL.jpg", url: "https://www.example.com/one-punch-man" },
+        ];
+
+        const seriesContainer = document.getElementById('seriesContainer');
+        const loadMoreButton = document.getElementById('loadMore');
+        const noResultsMessage = document.getElementById('noResultsMessage');
+        const searchInput = document.getElementById('searchInput');
+
+        let currentCount = 0;
+        const itemsPerLoad = 20;
+
+        function loadSeries(startIndex = 0, endIndex = itemsPerLoad) {
+            const end = Math.min(startIndex + endIndex, seriesData.length);
+            for (let i = startIndex; i < end; i++) {
+                const newSeriesItem = document.createElement('div');
+                newSeriesItem.classList.add('series-item');
+                newSeriesItem.innerHTML = `
+                    <a href="${seriesData[i].url}" target="_blank">
+                        <img src="${seriesData[i].img}" alt="${seriesData[i].title}">
+                        <span class="calificacion">${seriesData[i].calificacion}</span>
+                        <span class="series-title">${highlightMatch(seriesData[i].title, "")}</span>
+                    </a>
+                `;
+                seriesContainer.appendChild(newSeriesItem);
+            }
+            currentCount += itemsPerLoad;
+
+            if (currentCount >= seriesData.length) {
+                loadMoreButton.style.display = 'none';
+            }
+        }
+
+        function highlightMatch(title, query) {
+            if (!query) return title;
+            const regex = new RegExp(`(${query})`, 'gi');
+            return title.replace(regex, '<span class="highlight">$1</span>');
+        }
+
+        function filterSeries() {
+            const query = normalizeString(searchInput.value);
+            const filteredData = seriesData.filter(series => 
+                normalizeString(series.title).includes(query)
+            );
+
+            seriesContainer.innerHTML = '';
+            noResultsMessage.style.display = 'none';
+
+            if (filteredData.length > 0) {
+                filteredData.forEach(series => {
+                    const newSeriesItem = document.createElement('div');
+                    newSeriesItem.classList.add('series-item');
+                    newSeriesItem.innerHTML = `
+                        <a href="${series.url}" target="_blank">
+                            <img src="${series.img}" alt="${series.title}">
+                            <span class="calificacion">${series.calificacion}</span>
+                            <span class="series-title">${highlightMatch(series.title, query)}</span>
+                        </a>
+                    `;
+                    seriesContainer.appendChild(newSeriesItem);
+                });
+            } else {
+                noResultsMessage.style.display = 'block';
+            }
+        }
+
+        function normalizeString(str) {
+            return str
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"")
+                .trim();
+        }
+
+        searchInput.addEventListener('input', filterSeries);
+
+        loadSeries();
+
+        loadMoreButton.addEventListener('click', () => loadSeries(currentCount));
+    </script>
+</body>
+</html>
